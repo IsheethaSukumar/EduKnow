@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pyjwt
+passlib[bcrypt]
+python-multipart
+scikit-learn
+numpy
+pydantic
+python-jose[cryptography]
+bcrypt
+groq
+pymupdf

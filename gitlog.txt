@@ -1,0 +1,3 @@
+﻿6fed209 added AI analyzer, rich chatbot UI, and flashcards (removed secrets)
+8d4668e changes
+e889641 resolved errors

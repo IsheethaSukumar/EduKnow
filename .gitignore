@@ -1,0 +1,25 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+dev-dist/
+*.exe
+*.spec
+*.asar
+*.toc
+*.pkg
+*.pyz
+
+# Local database
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
