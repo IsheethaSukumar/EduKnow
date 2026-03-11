@@ -1,10 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 from database import engine, Base, SessionLocal
 from models import User, Content, Interaction, Badge, UserBadge, SearchLog, Bookmark, AnalysisHistory, ChatHistory
 
 # Import routers
-from routers import auth, content, search, recommendations, chatbot, gamification, analytics, study, notes, collections, analyzer, flashcards, rooms
+from routers import auth, content, search, recommendations, chatbot, gamification, analytics, study, notes, collections, analyzer, flashcards, rooms, interaction
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -38,6 +42,7 @@ app.include_router(collections.router)
 app.include_router(analyzer.router)
 app.include_router(flashcards.router)
 app.include_router(rooms.router)
+app.include_router(interaction.router)
 
 
 @app.on_event("startup")

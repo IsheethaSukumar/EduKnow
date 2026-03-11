@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any, Optional
@@ -6,6 +6,7 @@ import re
 import random
 import os
 import json
+import tempfile
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -27,6 +28,39 @@ try:
         groq_client = Groq(api_key=GROQ_API_KEY)
 except ImportError:
     pass
+
+
+@router.post("/transcribe")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Transcribe audio file using Groq Whisper-large-v3."""
+    if not groq_client:
+        raise HTTPException(status_code=503, detail="AI service unavailable")
+    
+    try:
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file.filename.split('.')[-1]}") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        with open(tmp_path, "rb") as audio_file:
+            transcription = groq_client.audio.transcriptions.create(
+                file=(file.filename, audio_file.read()),
+                model="whisper-large-v3",
+                response_format="json",
+                language="en",
+                temperature=0.0
+            )
+        
+        # Cleanup
+        os.unlink(tmp_path)
+        
+        return {"text": transcription.text}
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        raise HTTPException(status_code=500, detail="Transcription failed")
 
 
 SUGGESTED_QUESTIONS = [

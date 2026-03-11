@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { chatbotAPI } from '../services/api';
-import { Send, Bot, User, BookOpen, RotateCcw, Sparkles, Zap, ChevronDown, ChevronUp, CheckCircle, XCircle, RotateCw, Clock, Trash2, MessageSquare, X } from 'lucide-react';
+import { Send, Bot, User, BookOpen, RotateCcw, Sparkles, Zap, ChevronDown, ChevronUp, CheckCircle, XCircle, RotateCw, Clock, Trash2, MessageSquare, X, Mic } from 'lucide-react';
+import { AudioRecorder } from '../components/AudioRecorder';
 
 interface HistoryItem {
     id: string;
@@ -568,7 +569,8 @@ export default function ChatbotPage() {
                         </div>
                     )}
 
-                    <div className="chat-input-area">
+                    <div className="chat-input-area" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <AudioRecorder onTranscription={(text) => sendMessage(text)} />
                         <input
                             className="input"
                             type="text"

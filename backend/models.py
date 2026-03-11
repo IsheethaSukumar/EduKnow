@@ -87,6 +87,7 @@ class Content(Base):
 
     author = relationship("User", back_populates="contents")
     interactions = relationship("Interaction", back_populates="content")
+    ratings = relationship("ContentRating", back_populates="content", cascade="all, delete-orphan")
 
 
 class Interaction(Base):
@@ -258,3 +259,34 @@ class ChatHistory(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", foreign_keys=[user_id])
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String(20), default="info") # info, success, warning, study
+    is_read = Column(Boolean, default=False)
+    link = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class ContentRating(Base):
+    __tablename__ = "content_ratings"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    content_id = Column(String, ForeignKey("content.id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    rating = Column(Integer, nullable=False) # 1-5
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (UniqueConstraint('user_id', 'content_id', name='_user_content_rating_uc'),)
+
+    user = relationship("User", foreign_keys=[user_id])
+    content = relationship("Content", back_populates="ratings")

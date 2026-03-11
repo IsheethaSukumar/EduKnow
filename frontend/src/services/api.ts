@@ -60,6 +60,9 @@ export const contentAPI = {
     unbookmark: (id: string) => api.delete(`/content/${id}/bookmark`),
     bookmarkStatus: (id: string) => api.get(`/content/${id}/bookmark/status`),
     getBookmarks: () => api.get('/content/bookmarks'),
+    checkPlagiarism: (data: { text: string }) => api.post('/interaction/plagiarism-check', data),
+    rate: (id: string, rating: number, feedback?: string) => api.post(`/interaction/content/${id}/rate`, { rating, feedback }),
+    getRatings: (id: string) => api.get(`/interaction/content/${id}/ratings`),
 };
 
 // ── Search ──
@@ -82,6 +85,13 @@ export const chatbotAPI = {
     getHistory: () => api.get('/chatbot/history'),
     getHistoryItem: (id: string) => api.get(`/chatbot/history/${id}`),
     deleteHistoryItem: (id: string) => api.delete(`/chatbot/history/${id}`),
+    transcribe: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('/chatbot/transcribe', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    }
 };
 
 // ── Study Timer ──
@@ -98,6 +108,12 @@ export const notesAPI = {
     get: (id: string) => api.get(`/notes/${id}`),
     update: (id: string, data: any) => api.put(`/notes/${id}`, data),
     delete: (id: string) => api.delete(`/notes/${id}`),
+};
+
+// ── Interaction / Notifications ──
+export const interactionAPI = {
+    getNotifications: () => api.get('/interaction/notifications'),
+    readNotification: (id: string) => api.post(`/interaction/notifications/${id}/read`),
 };
 
 // ── Collections ──

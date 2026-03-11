@@ -194,16 +194,55 @@ export default function UploadPage() {
                     </div>
                 </form>
 
-                {/* Tips Sidebar */}
-                <div className="card" style={{ height: 'fit-content' }}>
-                    <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: 12 }}>💡 Upload Tips</h3>
-                    <ul style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.8, paddingLeft: 16 }}>
-                        <li>Use descriptive titles for better searchability</li>
-                        <li>Add relevant tags (e.g., "exam prep", "python")</li>
-                        <li>Choose the correct content type and category</li>
-                        <li>Write a detailed description for AI-powered search</li>
-                        <li>You earn <strong>+5 reputation</strong> per upload! 🎯</li>
-                    </ul>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Plagiarism Checker */}
+                    <div className="card" style={{ border: '1px solid var(--border-color)', background: 'rgba(99, 102, 241, 0.03)' }}>
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            🛡️ Plagiarism Checker
+                        </h3>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+                            Check your content against our database to ensure originality.
+                        </p>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ width: '100%', fontSize: '0.8rem' }}
+                            onClick={async () => {
+                                if (!form.description) return alert('Please enter a description first.');
+                                try {
+                                    setLoading(true);
+                                    const res = await contentAPI.checkPlagiarism({ text: form.description });
+                                    const data = res.data;
+
+                                    if (data.is_plagiarism) {
+                                        alert(`⚠️ Warning: Similarity of ${data.similarity_score.toFixed(1)}% detected with existing content: "${data.matches[0].title}". Please ensure your content is original.`);
+                                    } else {
+                                        alert(`✅ No plagiarism detected! Similarity score: ${data.similarity_score.toFixed(1)}%`);
+                                    }
+                                } catch (err) {
+                                    console.error('Plagiarism check error:', err);
+                                    alert('Failed to run plagiarism check.');
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                            disabled={loading || !form.description}
+                        >
+                            {loading ? 'Checking...' : 'Check Originality'}
+                        </button>
+                    </div>
+
+                    {/* Tips Sidebar */}
+                    <div className="card" style={{ height: 'fit-content' }}>
+                        <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: 12 }}>💡 Upload Tips</h3>
+                        <ul style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.8, paddingLeft: 16 }}>
+                            <li>Use descriptive titles for better searchability</li>
+                            <li>Add relevant tags (e.g., "exam prep", "python")</li>
+                            <li>Choose the correct content type and category</li>
+                            <li>Write a detailed description for AI-powered search</li>
+                            <li>You earn <strong>+5 reputation</strong> per upload! 🎯</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Send, Play, Pause, RotateCcw, MessageSquare, Timer } from 'lucide-react';
+import { VideoMeeting } from '../components/VideoMeeting';
+import { Users, Send, Play, Pause, RotateCcw, MessageSquare, Timer, Video, VideoOff, Layers, ExternalLink } from 'lucide-react';
 
 export default function StudyRoomsPage() {
     const { token, user } = useAuth();
     const [roomId, setRoomId] = useState('global-hackathon');
     const [joined, setJoined] = useState(false);
+    const [isVideoActive, setIsVideoActive] = useState(false);
+    const [breakoutRooms, setBreakoutRooms] = useState<string[]>([]);
 
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
@@ -164,51 +167,93 @@ export default function StudyRoomsPage() {
                         Room: {roomId}
                     </h1>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', marginRight: 6 }}></div>
                         {activeUsers.length} Online
                     </div>
+                    <button
+                        className={`btn ${isVideoActive ? 'btn-secondary' : 'btn-primary'}`}
+                        onClick={() => setIsVideoActive(!isVideoActive)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                        {isVideoActive ? <VideoOff size={18} /> : <Video size={18} />}
+                        {isVideoActive ? 'End Video' : 'Video Call'}
+                    </button>
                     <button className="btn btn-ghost" onClick={() => { wsRef.current?.close(); setJoined(false); }}>Leave</button>
                 </div>
             </div>
 
             <div className="grid-2" style={{ flex: 1, minHeight: 0, gap: 24 }}>
-                {/* Left Side: Timer & Users */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48, flex: 1 }}>
-                        <Timer size={48} color="var(--primary-color)" style={{ marginBottom: 24 }} />
-                        <div style={{ fontSize: '5rem', fontWeight: 800, fontFamily: 'monospace', lineHeight: 1, marginBottom: 32, color: timerActive ? 'var(--primary-color)' : 'var(--text-primary)' }}>
-                            {formatTime(timeLeft)}
+                {/* Left Side: Video/Timer & Users */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, flex: isVideoActive ? 2 : 1 }}>
+                    {isVideoActive ? (
+                        <div className="card" style={{ flex: 1, padding: 0, overflow: 'hidden', minHeight: 500 }}>
+                            <VideoMeeting
+                                roomName={roomId}
+                                displayName={user?.full_name || user?.username || 'Student'}
+                                onClose={() => setIsVideoActive(false)}
+                            />
                         </div>
-                        <div style={{ display: 'flex', gap: 16 }}>
-                            <button className={`btn ${timerActive ? 'btn-secondary' : 'btn-primary'}`} style={{ width: 120, padding: 16 }} onClick={toggleTimer}>
-                                {timerActive ? <Pause size={20} /> : <Play size={20} />}
-                                {timerActive ? 'Pause' : 'Start'}
-                            </button>
-                            <button className="btn btn-secondary" style={{ padding: 16 }} onClick={resetTimer}>
-                                <RotateCcw size={20} />
-                            </button>
+                    ) : (
+                        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48, flex: 1 }}>
+                            <Timer size={48} color="var(--primary-color)" style={{ marginBottom: 24 }} />
+                            <div style={{ fontSize: '5rem', fontWeight: 800, fontFamily: 'monospace', lineHeight: 1, marginBottom: 32, color: timerActive ? 'var(--primary-color)' : 'var(--text-primary)' }}>
+                                {formatTime(timeLeft)}
+                            </div>
+                            <div style={{ display: 'flex', gap: 16 }}>
+                                <button className={`btn ${timerActive ? 'btn-secondary' : 'btn-primary'}`} style={{ width: 120, padding: 16 }} onClick={toggleTimer}>
+                                    {timerActive ? <Pause size={20} /> : <Play size={20} />}
+                                    {timerActive ? 'Pause' : 'Start'}
+                                </button>
+                                <button className="btn btn-secondary" style={{ padding: 16 }} onClick={resetTimer}>
+                                    <RotateCcw size={20} />
+                                </button>
+                            </div>
                         </div>
-                        <p style={{ marginTop: 24, fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
-                            Shared Pomodoro. Anyone can control it.
-                        </p>
-                    </div>
+                    )}
 
-                    <div className="card" style={{ flex: 1, overflowY: 'auto' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 16 }}>Present in Room</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {(activeUsers || []).map((name, i) => {
-                                const userName = name || 'Unknown';
-                                return (
-                                    <div key={`user-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.85rem' }}>
-                                            {userName.charAt(0).toUpperCase()}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                        <div className="card" style={{ flex: 1, overflowY: 'auto' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Users size={18} /> Present
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                {(activeUsers || []).map((name, i) => {
+                                    const userName = name || 'Unknown';
+                                    return (
+                                        <div key={`user-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.85rem' }}>
+                                                {userName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <span style={{ fontWeight: 500 }}>{userName} {userName === user?.username ? '(You)' : ''}</span>
                                         </div>
-                                        <span style={{ fontWeight: 500 }}>{userName} {userName === user?.username ? '(You)' : ''}</span>
-                                    </div>
-                                )
-                            })}
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="card" style={{ flex: 1 }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Layers size={18} /> Breakout Rooms
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {['Discussion Group A', 'Project Brainstorm', 'Exam Prep'].map((room) => (
+                                    <button
+                                        key={room}
+                                        className="btn btn-secondary"
+                                        style={{ justifyContent: 'space-between', fontSize: '0.85rem' }}
+                                        onClick={() => {
+                                            setRoomId(room.toLowerCase().replace(/ /g, '-'));
+                                            wsRef.current?.close();
+                                            setTimeout(joinRoom, 100);
+                                        }}
+                                    >
+                                        {room}
+                                        <ExternalLink size={14} />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

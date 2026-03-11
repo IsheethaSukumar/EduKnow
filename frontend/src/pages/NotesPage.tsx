@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { notesAPI } from '../services/api';
-import { Plus, Trash2, Edit3, Search, StickyNote, X, Save } from 'lucide-react';
+import { Plus, Trash2, Edit3, Search, StickyNote, X, Save, Mic } from 'lucide-react';
+import { AudioRecorder } from '../components/AudioRecorder';
 
 const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899'];
 
@@ -168,7 +169,10 @@ export default function NotesPage() {
                     <div className="card" style={{ width: 500, maxHeight: '80vh', overflow: 'auto' }}
                         onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>{editingNote ? 'Edit Note' : 'New Note'}</h2>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>{editingNote ? 'Edit Note' : 'New Note'}</h2>
+                                <AudioRecorder onTranscription={(text) => setForm(prev => ({ ...prev, text: prev.text + (prev.text ? ' ' : '') + text }))} />
+                            </div>
                             <button className="btn btn-ghost" onClick={() => setShowModal(false)}><X size={18} /></button>
                         </div>
                         <input

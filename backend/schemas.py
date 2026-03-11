@@ -337,3 +337,34 @@ class FlashcardResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── New Feature Schemas ───
+class NotificationResponse(BaseModel):
+    id: str
+    title: str
+    message: str
+    type: str
+    is_read: bool
+    link: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ContentRatingCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
+
+
+class ContentRatingResponse(BaseModel):
+    id: str
+    content_id: str
+    user_id: str
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
