@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { VideoMeeting } from '../components/VideoMeeting';
+import { getWSUrl } from '../services/api';
 import { Users, Send, Play, Pause, RotateCcw, MessageSquare, Timer, Video, VideoOff, Layers, ExternalLink } from 'lucide-react';
 
 export default function StudyRoomsPage() {
@@ -42,8 +43,7 @@ export default function StudyRoomsPage() {
     const joinRoom = () => {
         if (!token) return;
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/rooms/${roomId}/ws?token=${token}`;
+        const wsUrl = getWSUrl(`/rooms/${roomId}/ws?token=${token}`);
         const ws = new WebSocket(wsUrl);
 
         ws.onerror = (err) => {

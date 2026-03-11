@@ -1,11 +1,20 @@
 import axios from 'axios';
 
-let API_BASE = import.meta.env.VITE_API_URL ||
+export let API_BASE = import.meta.env.VITE_API_URL ||
     (window.location.hostname === 'localhost' ? 'http://localhost:8000/api' : '/api');
 
 if (API_BASE.startsWith('http') && !API_BASE.endsWith('/api')) {
     API_BASE = API_BASE.endsWith('/') ? `${API_BASE}api` : `${API_BASE}/api`;
 }
+
+export const getWSUrl = (path: string) => {
+    let base = API_BASE;
+    if (base.startsWith('/api')) {
+        base = `${window.location.protocol === 'https:' ? 'https:' : 'http:'}//${window.location.host}${base}`;
+    }
+    const wsBase = base.replace('http:', 'ws:').replace('https:', 'wss:');
+    return `${wsBase}${path}`;
+};
 
 const api = axios.create({
     baseURL: API_BASE,

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Loader2, Play, Pause } from 'lucide-react';
+import { chatbotAPI } from '../services/api';
 
 interface AudioRecorderProps {
     onTranscription: (text: string) => void;
@@ -63,24 +64,18 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscription, p
     const handleTranscription = async (blob: Blob) => {
         setIsTranscribing(true);
         try {
-            const formData = new FormData();
-            formData.append('file', blob, 'recording.webm');
+            // Convert Blob to File for the API
+            const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
+            const response = await chatbotAPI.transcribe(file);
 
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/chatbot/transcribe`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (!response.ok) throw new Error('Transcription failed');
-            const data = await response.json();
-            onTranscription(data.text);
+            if (response.data && response.data.text) {
+                onTranscription(response.data.text);
+            } else {
+                throw new Error('No text returned from transcription');
+            }
         } catch (err) {
             console.error('Transcription error:', err);
-            alert('Failed to transcribe audio');
+            alert('Failed to transcribe audio. Ensure GROQ_API_KEY is set in backend.');
         } finally {
             setIsTranscribing(false);
         }
