@@ -335,7 +335,17 @@ export default function AssignmentsPage() {
                                                             <div className="text-xs text-secondary">Submitted {formatDate(new Date(mySubmission.submitted_at), 'PPP')}</div>
                                                         </div>
                                                     </div>
-                                                    <button className="btn-ghost text-xs" onClick={() => setMySubmission(null)}>Resubmit</button>
+                                                    <div className="flex gap-2">
+                                                        <a 
+                                                            href={mySubmission.file_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="btn btn-ghost btn-sm flex-center gap-1"
+                                                        >
+                                                            <ExternalLink size={14} /> View
+                                                        </a>
+                                                        <button className="btn btn-ghost btn-sm text-secondary" onClick={() => setMySubmission(null)}>Resubmit</button>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col gap-4">
@@ -525,6 +535,122 @@ export default function AssignmentsPage() {
                                 <button type="submit" className="btn btn-primary flex-1">Publish Assignment</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Grading Modal */}
+            {gradingSubmission && (
+                <div className="modal-overlay">
+                    <div className="modal-content card max-w-2xl w-full p-8">
+                        <div className="flex-between mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold">Grade Submission</h2>
+                                <p className="text-sm text-secondary">Student ID: {gradingSubmission.student_id}</p>
+                            </div>
+                            <button className="btn-close" onClick={() => setGradingSubmission(null)}>&times;</button>
+                        </div>
+
+                        <div className="mb-8 p-4 bg-secondary-alpha rounded-xl flex-between border-dashed border-2 border-color">
+                            <div className="flex-center gap-4">
+                                <div className="p-3 bg-primary-alpha rounded-lg">
+                                    <FileText size={24} className="text-primary" />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-lg">{gradingSubmission.file_name}</div>
+                                    <div className="text-xs text-secondary">Submitted on {formatDate(new Date(gradingSubmission.submitted_at), 'PPP p')}</div>
+                                </div>
+                            </div>
+                            <a 
+                                href={gradingSubmission.file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="btn btn-primary btn-sm flex-center gap-2"
+                            >
+                                <ExternalLink size={14} /> View Work
+                            </a>
+                        </div>
+
+                        <div className="grid gap-8">
+                            <div className="grid gap-4">
+                                <label className="font-bold text-lg flex-between">
+                                    Overall Grade
+                                    <span className="text-primary text-2xl font-black">{gradeData.grade} / {selectedAssignment?.total_points}</span>
+                                </label>
+                                <div className="flex gap-4 items-center">
+                                    <input 
+                                        type="range"
+                                        className="flex-1 accent-primary"
+                                        min="0"
+                                        max={selectedAssignment?.total_points || 100}
+                                        value={gradeData.grade}
+                                        onChange={e => setGradeData({...gradeData, grade: parseInt(e.target.value)})}
+                                    />
+                                    <input 
+                                        type="number"
+                                        className="input w-24 text-center font-bold text-lg"
+                                        value={gradeData.grade}
+                                        onChange={e => setGradeData({...gradeData, grade: Math.min(selectedAssignment?.total_points || 100, Math.max(0, parseInt(e.target.value) || 0))})}
+                                    />
+                                </div>
+                            </div>
+
+                            {selectedAssignment?.rubric && selectedAssignment.rubric.length > 0 && (
+                                <div className="grid gap-4">
+                                    <h4 className="font-bold text-lg flex-center gap-2">
+                                        <Layout size={20} className="text-primary" /> Rubric Assessment
+                                    </h4>
+                                    <div className="grid gap-4">
+                                        {selectedAssignment.rubric.map((r, i) => (
+                                            <div key={i} className="p-4 border border-color rounded-xl hover-shadow transition-all bg-primary-alpha">
+                                                <div className="flex-between mb-2">
+                                                    <div>
+                                                        <span className="font-bold">{r.name}</span>
+                                                        <p className="text-xs text-secondary">{r.description}</p>
+                                                    </div>
+                                                    <div className="flex-center gap-2 bg-secondary p-2 rounded-lg border border-color">
+                                                        <input 
+                                                            type="number"
+                                                            className="input-ghost text-right font-black w-10 text-primary"
+                                                            max={r.points}
+                                                            min="0"
+                                                            value={gradeData.rubric_feedback[r.name] || 0}
+                                                            onChange={e => {
+                                                                const points = Math.min(r.points, Math.max(0, parseInt(e.target.value) || 0));
+                                                                setGradeData({
+                                                                    ...gradeData,
+                                                                    rubric_feedback: {
+                                                                        ...gradeData.rubric_feedback,
+                                                                        [r.name]: points
+                                                                    }
+                                                                });
+                                                            }}
+                                                        />
+                                                        <span className="text-secondary font-semibold">/ {r.points}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid gap-2">
+                                <label className="font-bold text-lg">Feedback Comments</label>
+                                <textarea 
+                                    className="input"
+                                    rows={4}
+                                    placeholder="Provide detailed feedback for the student..."
+                                    value={gradeData.feedback_text}
+                                    onChange={e => setGradeData({...gradeData, feedback_text: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="flex gap-4 pt-4 border-t border-color">
+                                <button className="btn btn-secondary flex-1" onClick={() => setGradingSubmission(null)}>Cancel</button>
+                                <button className="btn btn-primary flex-1 h-12" onClick={handleGradeSubmission}>Submit Grade & Feedback</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
