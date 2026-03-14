@@ -9,7 +9,7 @@ from models import User, Content, Notification, ContentRating
 from schemas import NotificationResponse, ContentRatingCreate, ContentRatingResponse
 from routers.auth import get_current_user
 
-router = APIRouter(prefix="/api/interact", tags=["Interactions"])
+router = APIRouter(prefix="/api/interaction", tags=["Interactions"])
 
 # ─── Notifications ───
 @router.get("/notifications", response_model=List[NotificationResponse])
@@ -89,7 +89,7 @@ def get_content_ratings(content_id: str, db: Session = Depends(get_db)):
     ).order_by(ContentRating.created_at.desc()).all()
 
 # ─── Plagiarism Checker (Internal Similarity) ───
-@router.post("/check-plagiarism")
+@router.post("/plagiarism-check")
 def check_plagiarism(
     text: str,
     current_user: User = Depends(get_current_user),
