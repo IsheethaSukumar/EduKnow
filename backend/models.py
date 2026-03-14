@@ -57,6 +57,7 @@ class User(Base):
     last_active = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
+    warning_count = Column(Integer, default=0)  # For chat report system (3 warnings = banned)
 
     contents = relationship("Content", back_populates="author")
     interactions = relationship("Interaction", back_populates="user")
@@ -290,3 +291,72 @@ class ContentRating(Base):
 
     user = relationship("User", foreign_keys=[user_id])
     content = relationship("Content", back_populates="ratings")
+
+
+class Assignment(Base):
+    __tablename__ = "assignments"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, default="")
+    author_id = Column(String, ForeignKey("users.id"), nullable=False)
+    due_date = Column(DateTime, nullable=False)
+    total_points = Column(Integer, default=100)
+    rubric = Column(JSON, default=list) # List of criterion {name, points, description}
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    author = relationship("User", foreign_keys=[author_id])
+    submissions = relationship("AssignmentSubmission", back_populates="assignment", cascade="all, delete-orphan")
+
+
+class AssignmentSubmission(Base):
+    __tablename__ = "assignment_submissions"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    assignment_id = Column(String, ForeignKey("assignments.id"), nullable=False)
+    student_id = Column(String, ForeignKey("users.id"), nullable=False)
+    file_url = Column(String(255), nullable=False)
+    file_name = Column(String(255), default="submission.pdf")
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(20), default="submitted") # submitted, graded, late
+    grade = Column(Float, nullable=True)
+    feedback_text = Column(Text, default="")
+    rubric_feedback = Column(JSON, default=dict) # {criterion_id: points_earned}
+
+    assignment = relationship("Assignment", back_populates="submissions")
+    student = relationship("User", foreign_keys=[student_id])
+
+
+class Complaint(Base):
+    __tablename__ = "complaints"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    category = Column(String(100), default="Other")
+    priority = Column(String(20), default="medium")  # low, medium, high
+    status = Column(String(20), default="open")  # open, in_review, resolved
+    admin_response = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class ChatReport(Base):
+    __tablename__ = "chat_reports"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    reporter_id = Column(String, ForeignKey("users.id"), nullable=False)
+    reported_user = Column(String(100), nullable=False)  # username of reported person
+    reported_user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    room_id = Column(String(100), nullable=False)
+    message_text = Column(Text, nullable=False)
+    reason = Column(String(100), default="Inappropriate content")
+    status = Column(String(20), default="pending")  # pending, reviewed, actioned
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    reported = relationship("User", foreign_keys=[reported_user_id])

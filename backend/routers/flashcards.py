@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from database import get_db
 from models import User, Flashcard
@@ -46,7 +46,7 @@ def get_due_flashcards(
     db: Session = Depends(get_db)
 ):
     """Get flashcards that are currently due for review based on SRS."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     cards = db.query(Flashcard).filter(
         Flashcard.user_id == current_user.id,
         Flashcard.next_review_date <= now
@@ -92,7 +92,7 @@ def review_flashcard(
         card.easiness_factor = 1.3
 
     # Set next review date
-    card.next_review_date = datetime.utcnow() + timedelta(days=card.interval)
+    card.next_review_date = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=card.interval)
 
     db.commit()
     db.refresh(card)

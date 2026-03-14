@@ -36,7 +36,7 @@ class UserResponse(BaseModel):
     interests: List[str] = []
     reputation_score: int = 0
     streak_days: int = 0
-    created_at: datetime = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -87,8 +87,8 @@ class ContentResponse(BaseModel):
     downloads: int = 0
     version: int = 1
     is_active: bool = True
-    created_at: datetime = None
-    updated_at: datetime = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -113,6 +113,10 @@ class SearchResponse(BaseModel):
     total: int
     query: str
     suggestions: List[str] = []
+
+
+class PlagiarismCheckRequest(BaseModel):
+    text: str
 
 
 # ─── Chatbot Schemas ───
@@ -193,6 +197,18 @@ class SearchAnalytics(BaseModel):
     popular_queries: List[Dict[str, Any]]
     search_volume: List[Dict[str, Any]]
     zero_result_queries: List[str]
+
+
+class StudyToolsAnalytics(BaseModel):
+    total_study_sessions: int
+    total_study_hours: float
+    total_notes: int
+    total_flashcards: int
+    total_assignments: int
+    total_collections: int
+    total_bookmarks: int
+    total_study_rooms: int = 0
+    total_video_calls: int = 0
 
 
 # ─── Recommendation Schemas ───
@@ -365,6 +381,58 @@ class ContentRatingResponse(BaseModel):
     rating: int
     comment: Optional[str] = None
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ─── Assignment Schemas ───
+class RubricCriterion(BaseModel):
+    name: str
+    points: int
+    description: str = ""
+
+class AssignmentCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+    due_date: datetime
+    total_points: int = 100
+    rubric: List[RubricCriterion] = []
+
+class AssignmentResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    author_id: str
+    due_date: datetime
+    total_points: int
+    rubric: List[RubricCriterion] = []
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class AssignmentSubmissionCreate(BaseModel):
+    file_url: str
+    file_name: str = "submission.pdf"
+
+class AssignmentSubmissionGrade(BaseModel):
+    grade: float
+    feedback_text: str = ""
+    rubric_feedback: Dict[str, int] = {} # criterion_name: points
+
+class AssignmentSubmissionResponse(BaseModel):
+    id: str
+    assignment_id: str
+    student_id: str
+    file_url: str
+    file_name: str
+    submitted_at: datetime
+    status: str
+    grade: Optional[float] = None
+    feedback_text: str = ""
+    rubric_feedback: Dict[str, int] = {}
 
     class Config:
         from_attributes = True

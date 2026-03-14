@@ -1,35 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
-import { studyAPI, contentAPI } from '../services/api';
-import { Play, Pause, RotateCcw, Coffee, Brain, Clock, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useStudy } from '../context/StudyContext';
+import { studyAPI } from '../services/api';
+import { Play, Pause, RotateCcw, Coffee, Brain } from 'lucide-react';
 
 export default function StudyTimerPage() {
-    const [mode, setMode] = useState<'focus' | 'break'>('focus');
-    const [timeLeft, setTimeLeft] = useState(25 * 60);
-    const [isRunning, setIsRunning] = useState(false);
+    const {
+        mode, timeLeft, isRunning, elapsed,
+        toggleTimer, resetTimer, switchMode,
+        formatTime, formatDuration
+    } = useStudy();
+
     const [sessions, setSessions] = useState<any[]>([]);
     const [stats, setStats] = useState<any>(null);
-    const [elapsed, setElapsed] = useState(0);
-    const intervalRef = useRef<any>(null);
 
     const FOCUS_TIME = 25 * 60;
     const BREAK_TIME = 5 * 60;
 
     useEffect(() => {
         loadData();
-        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-    }, []);
-
-    useEffect(() => {
-        if (isRunning && timeLeft > 0) {
-            intervalRef.current = setInterval(() => {
-                setTimeLeft(t => t - 1);
-                setElapsed(e => e + 1);
-            }, 1000);
-        } else if (timeLeft === 0 && isRunning) {
-            handleSessionComplete();
-        }
-        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-    }, [isRunning, timeLeft]);
+    }, [isRunning]); // Reload stats when timer stops/starts/completes
 
     const loadData = async () => {
         try {
@@ -40,60 +29,6 @@ export default function StudyTimerPage() {
             setSessions(sessRes.data);
             setStats(statsRes.data);
         } catch (err) { }
-    };
-
-    const handleSessionComplete = async () => {
-        setIsRunning(false);
-        if (elapsed > 10) {
-            try {
-                await studyAPI.createSession({
-                    duration_seconds: elapsed,
-                    session_type: mode,
-                });
-                loadData();
-            } catch (err) { }
-        }
-        // Auto-switch mode
-        if (mode === 'focus') {
-            setMode('break');
-            setTimeLeft(BREAK_TIME);
-        } else {
-            setMode('focus');
-            setTimeLeft(FOCUS_TIME);
-        }
-        setElapsed(0);
-    };
-
-    const toggleTimer = () => setIsRunning(!isRunning);
-
-    const resetTimer = () => {
-        setIsRunning(false);
-        setTimeLeft(mode === 'focus' ? FOCUS_TIME : BREAK_TIME);
-        setElapsed(0);
-    };
-
-    const switchMode = (m: 'focus' | 'break') => {
-        if (isRunning && elapsed > 10) {
-            studyAPI.createSession({ duration_seconds: elapsed, session_type: mode }).then(loadData);
-        }
-        setIsRunning(false);
-        setMode(m);
-        setTimeLeft(m === 'focus' ? FOCUS_TIME : BREAK_TIME);
-        setElapsed(0);
-    };
-
-    const formatTime = (s: number) => {
-        const m = Math.floor(s / 60);
-        const sec = s % 60;
-        return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-    };
-
-    const formatDuration = (s: number) => {
-        if (s < 60) return `${s}s`;
-        const m = Math.floor(s / 60);
-        if (m < 60) return `${m}m`;
-        const h = Math.floor(m / 60);
-        return `${h}h ${m % 60}m`;
     };
 
     const progress = mode === 'focus'

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { StudyProvider } from './context/StudyContext';
 import { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -19,6 +20,9 @@ import BookmarksPage from './pages/BookmarksPage';
 import AnalyzerPage from './pages/AnalyzerPage';
 import FlashcardsPage from './pages/FlashcardsPage';
 import StudyRoomsPage from './pages/StudyRoomsPage';
+import AssignmentsPage from './pages/AssignmentsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import ComplaintsPage from './pages/ComplaintsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, loading } = useAuth();
@@ -68,6 +72,9 @@ function AppLayout() {
                     <Route path="/notes" element={<NotesPage />} />
                     <Route path="/collections" element={<CollectionsPage />} />
                     <Route path="/bookmarks" element={<BookmarksPage />} />
+                    <Route path="/assignments" element={<AssignmentsPage />} />
+                    <Route path="/notifications" element={<NotificationsPage />} />
+                    <Route path="/complaints" element={<ComplaintsPage />} />
                 </Routes>
             </main>
         </div>
@@ -77,19 +84,21 @@ function AppLayout() {
 export default function App() {
     return (
         <AuthProvider>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route
-                        path="/*"
-                        element={
-                            <ProtectedRoute>
-                                <AppLayout />
-                            </ProtectedRoute>
-                        }
-                    />
-                </Routes>
-            </BrowserRouter>
+            <StudyProvider>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route
+                            path="/*"
+                            element={
+                                <ProtectedRoute>
+                                    <AppLayout />
+                                </ProtectedRoute>
+                            }
+                        />
+                    </Routes>
+                </BrowserRouter>
+            </StudyProvider>
         </AuthProvider>
     );
 }

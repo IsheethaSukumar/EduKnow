@@ -70,7 +70,7 @@ export const contentAPI = {
     bookmarkStatus: (id: string) => api.get(`/content/${id}/bookmark/status`),
     getBookmarks: () => api.get('/content/bookmarks'),
     checkPlagiarism: (data: { text: string }) => api.post('/interaction/plagiarism-check', data),
-    rate: (id: string, rating: number, feedback?: string) => api.post(`/interaction/content/${id}/rate`, { rating, feedback }),
+    rate: (id: string, rating: number, comment?: string) => api.post(`/interaction/content/${id}/rate`, { rating, comment }),
     getRatings: (id: string) => api.get(`/interaction/content/${id}/ratings`),
 };
 
@@ -123,6 +123,15 @@ export const notesAPI = {
 export const interactionAPI = {
     getNotifications: () => api.get('/interaction/notifications'),
     readNotification: (id: string) => api.post(`/interaction/notifications/${id}/read`),
+    // Complaints
+    getComplaints: () => api.get('/interaction/complaints'),
+    createComplaint: (data: any) => api.post('/interaction/complaints', data),
+    updateComplaintStatus: (id: string, status: string, admin_response?: string) =>
+        api.put(`/interaction/complaints/${id}`, { status, admin_response }),
+    // Chat Reports
+    reportChatMessage: (data: any) => api.post('/interaction/chat-report', data),
+    getChatReports: () => api.get('/interaction/chat-reports'),
+    warnChatReport: (id: string) => api.put(`/interaction/chat-reports/${id}/warn`),
 };
 
 // ── Collections ──
@@ -146,11 +155,12 @@ export const gamificationAPI = {
 
 // ── Analytics ──
 export const analyticsAPI = {
+    personal: () => api.get('/analytics/personal'),
     overview: () => api.get('/analytics/overview'),
     content: () => api.get('/analytics/content'),
     users: () => api.get('/analytics/users'),
     search: () => api.get('/analytics/search'),
-    personal: () => api.get('/analytics/personal'),
+    studyTools: () => api.get('/analytics/study-tools'),
 };
 
 export const analyzerAPI = {
@@ -170,6 +180,17 @@ export const flashcardsAPI = {
     create: (data: any) => api.post('/flashcards/', data),
     review: (id: string, quality: number) => api.post(`/flashcards/${id}/review`, { quality }),
     delete: (id: string) => api.delete(`/flashcards/${id}`),
+};
+
+// ── Assignments ──
+export const assignmentsAPI = {
+    list: () => api.get('/assignments/'),
+    get: (id: string) => api.get(`/assignments/${id}`),
+    create: (data: any) => api.post('/assignments/', data),
+    submit: (id: string, data: any) => api.post(`/assignments/${id}/submit`, data),
+    getSubmissions: (id: string) => api.get(`/assignments/${id}/submissions`),
+    getMySubmission: (id: string) => api.get(`/assignments/${id}/my-submission`),
+    grade: (submissionId: string, data: any) => api.post(`/assignments/submissions/${submissionId}/grade`, data),
 };
 
 export default api;

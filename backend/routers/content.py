@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from database import get_db
@@ -168,7 +168,7 @@ def update_content(
         content.is_active = data.is_active
 
     content.version += 1
-    content.updated_at = datetime.utcnow()
+    content.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(content)
     return content_to_response(content, db)

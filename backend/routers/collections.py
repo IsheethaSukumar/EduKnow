@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from database import get_db
@@ -126,7 +126,7 @@ def add_item_to_collection(
         order=max_order,
     )
     db.add(item)
-    coll.updated_at = datetime.utcnow()
+    coll.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     return {"message": "Added to collection"}
 
@@ -151,7 +151,7 @@ def remove_item_from_collection(
     ).first()
     if item:
         db.delete(item)
-        coll.updated_at = datetime.utcnow()
+        coll.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
     return {"message": "Removed from collection"}
 

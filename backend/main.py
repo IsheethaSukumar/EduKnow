@@ -5,10 +5,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 from database import engine, Base, SessionLocal
-from models import User, Content, Interaction, Badge, UserBadge, SearchLog, Bookmark, AnalysisHistory, ChatHistory
+from models import (
+    User, Content, Interaction, Badge, UserBadge, SearchLog, Bookmark,
+    AnalysisHistory, ChatHistory, Notification, ContentRating,
+    Collection, CollectionItem, StudySession, Note, Flashcard,
+    Assignment, AssignmentSubmission, Complaint, ChatReport
+)
 
 # Import routers
-from routers import auth, content, search, recommendations, chatbot, gamification, analytics, study, notes, collections, analyzer, flashcards, rooms, interaction
+from routers import auth, content, search, recommendations, chatbot, gamification, analytics, study, notes, collections, analyzer, flashcards, rooms, interaction, assignments
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -43,6 +48,7 @@ app.include_router(analyzer.router)
 app.include_router(flashcards.router)
 app.include_router(rooms.router)
 app.include_router(interaction.router)
+app.include_router(assignments.router)
 
 
 @app.on_event("startup")

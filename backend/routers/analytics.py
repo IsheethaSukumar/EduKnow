@@ -1,18 +1,44 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import Counter
 
 from database import get_db
-from models import User, Content, Interaction, SearchLog, Bookmark, StudySession, Note, Collection
+from models import User, Content, Interaction, SearchLog, Bookmark, StudySession, Note, Collection, Flashcard, Assignment
 from schemas import (
-    AnalyticsOverview, ContentAnalytics, UserAnalytics, SearchAnalytics, ContentResponse
+    AnalyticsOverview, ContentAnalytics, UserAnalytics, SearchAnalytics, ContentResponse, StudyToolsAnalytics
 )
 from routers.content import content_to_response
 from routers.auth import get_current_user
+from routers.rooms import room_stats
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
+
+@router.get("/study-tools", response_model=StudyToolsAnalytics)
+def get_study_tools_analytics(db: Session = Depends(get_db)):
+    """Get global analytics for study tools."""
+    total_sessions = db.query(func.count(StudySession.id)).scalar() or 0
+    total_seconds = db.query(func.sum(StudySession.duration_seconds)).scalar() or 0
+    total_hours = round(float(total_seconds) / 3600.0, 2)
+    
+    total_notes = db.query(func.count(Note.id)).scalar() or 0
+    total_flashcards = db.query(func.count(Flashcard.id)).scalar() or 0
+    total_assignments = db.query(func.count(Assignment.id)).scalar() or 0
+    total_collections = db.query(func.count(Collection.id)).scalar() or 0
+    total_bookmarks = db.query(func.count(Bookmark.id)).scalar() or 0
+    
+    return StudyToolsAnalytics(
+        total_study_sessions=total_sessions,
+        total_study_hours=total_hours,
+        total_notes=total_notes,
+        total_flashcards=total_flashcards,
+        total_assignments=total_assignments,
+        total_collections=total_collections,
+        total_bookmarks=total_bookmarks,
+        total_study_rooms=room_stats["total_created"],
+        total_video_calls=room_stats["total_video_calls"]
+    )
 
 
 @router.get("/personal")
@@ -22,7 +48,8 @@ def get_personal_analytics(
 ):
     """Get personal learning analytics for the current user."""
     days = 30
-    since = datetime.utcnow() - timedelta(days=days)
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    since = now_utc - timedelta(days=days)
 
     # Study sessions
     sessions = db.query(StudySession).filter(
@@ -38,7 +65,7 @@ def get_personal_analytics(
         daily[d] = daily.get(d, 0) + s.duration_seconds
     daily_list = []
     for i in range(14):
-        d = (datetime.utcnow() - timedelta(days=13 - i)).strftime("%Y-%m-%d")
+        d = (now_utc - timedelta(days=13 - i)).strftime("%Y-%m-%d")
         daily_list.append({"date": d, "seconds": daily.get(d, 0)})
 
     # Category breakdown from interactions
@@ -94,7 +121,7 @@ def get_personal_analytics(
 @router.get("/overview", response_model=AnalyticsOverview)
 def get_overview(db: Session = Depends(get_db)):
     """Get high-level analytics overview."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     total_users = db.query(func.count(User.id)).scalar()
@@ -212,7 +239,7 @@ def get_user_analytics(db: Session = Depends(get_db)):
     ]
 
     # Activity timeline (last 7 days)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     activity_timeline = []
     for i in range(7):
         day = now - timedelta(days=i)
@@ -251,7 +278,7 @@ def get_search_analytics(db: Session = Depends(get_db)):
     popular_queries = [{"query": q, "count": c} for q, c in popular_raw]
 
     # Search volume (last 7 days)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     search_volume = []
     for i in range(7):
         day = now - timedelta(days=i)

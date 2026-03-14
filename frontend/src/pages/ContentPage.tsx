@@ -4,7 +4,7 @@ import { contentAPI, recommendAPI, collectionsAPI, notesAPI } from '../services/
 import {
     Eye, ThumbsUp, Download, ArrowLeft, Calendar, User, Tag,
     FileText, Video, BookMarked, BookOpen, Presentation, Clock,
-    Bookmark, ExternalLink, FolderPlus, StickyNote, X, Save
+    Bookmark, ExternalLink, FolderPlus, StickyNote, X, Save, Star
 } from 'lucide-react';
 
 const TYPE_ICONS: Record<string, any> = {
@@ -21,6 +21,9 @@ export default function ContentPage() {
     const [loading, setLoading] = useState(true);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [allRatings, setAllRatings] = useState<any[]>([]);
 
     // Modal states
     const [showNoteModal, setShowNoteModal] = useState(false);
@@ -35,14 +38,16 @@ export default function ContentPage() {
     const loadContent = async (contentId: string) => {
         setLoading(true);
         try {
-            const [contentRes, relatedRes, bookmarkRes] = await Promise.all([
+            const [contentRes, relatedRes, bookmarkRes, ratingsRes] = await Promise.all([
                 contentAPI.get(contentId),
                 recommendAPI.getTrending(4),
                 contentAPI.bookmarkStatus(contentId),
+                contentAPI.getRatings(contentId)
             ]);
             setContent(contentRes.data);
             setRelated(relatedRes.data.recommendations.filter((r: any) => r.id !== contentId).slice(0, 3));
             setIsBookmarked(bookmarkRes.data.bookmarked);
+            setAllRatings(ratingsRes.data);
             // Record view
             contentAPI.recordView(contentId);
         } catch (err) {
@@ -84,6 +89,19 @@ export default function ContentPage() {
                 setIsBookmarked(true);
             }
         } catch (err) { }
+    };
+
+    const handleRate = async () => {
+        if (!id || rating === 0) return;
+        try {
+            await contentAPI.rate(id, rating, comment);
+            alert('Thank you for your feedback!');
+            setComment('');
+            const res = await contentAPI.getRatings(id);
+            setAllRatings(res.data);
+        } catch (err) {
+            console.error('Rating error:', err);
+        }
     };
 
     // Note actions
@@ -241,6 +259,56 @@ export default function ContentPage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Ratings Section */}
+                    <div className="card" style={{ marginTop: 24 }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 16 }}>Knowledge Rating & Feedback</h3>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <button 
+                                    key={star} 
+                                    onClick={() => setRating(star)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                                >
+                                    <Star 
+                                        size={24} 
+                                        fill={star <= rating ? 'var(--primary-color)' : 'none'} 
+                                        color={star <= rating ? 'var(--primary-color)' : 'var(--text-tertiary)'} 
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                        <textarea 
+                            className="input" 
+                            placeholder="Share your thoughts on this resource..." 
+                            value={comment}
+                            onChange={e => setComment(e.target.value)}
+                            rows={3}
+                            style={{ marginBottom: 12, resize: 'vertical' }}
+                        />
+                        <button className="btn btn-primary" onClick={handleRate} disabled={rating === 0}>
+                            Submit Feedback
+                        </button>
+
+                        {allRatings.length > 0 && (
+                            <div style={{ marginTop: 24 }}>
+                                <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>Peer Reviews ({allRatings.length})</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                    {allRatings.map((r, idx) => (
+                                        <div key={idx} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                <div style={{ display: 'flex', gap: 2 }}>
+                                                    {[1, 2, 3, 4, 5].map(s => <Star key={s} size={10} fill={s <= r.rating ? 'currentColor' : 'none'} color="var(--primary-color)" />)}
+                                                </div>
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>{new Date(r.created_at).toLocaleDateString()}</span>
+                                            </div>
+                                            <p style={{ fontSize: '0.85rem' }}>{r.comment || "Rated without comment."}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Sidebar Info */}

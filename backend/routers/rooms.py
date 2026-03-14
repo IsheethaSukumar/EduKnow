@@ -6,24 +6,20 @@ from database import get_db
 
 router = APIRouter(tags=["Study Rooms"])
 
-# In-memory state for study rooms
-# Room structure:
-# {
-#   "room_1": {
-#       "connections": [(websocket, username)],
-#       "chat_history": [{"username": "Alice", "text": "Hi"}],
-#       "timer": {"active": False, "timeLeft": 1500, "mode": "focus"}
-#   }
-# }
 rooms: Dict[str, Dict] = {}
+room_stats = {
+    "total_created": 0,
+    "total_video_calls": 0
+}
 
 def get_room(room_id: str):
     if room_id not in rooms:
         rooms[room_id] = {
             "connections": [],
             "chat_history": [],
-            "timer": {"active": False, "timeLeft": 1500, "mode": "focus"} # 25 mins
+            "timer": {"active": False, "timeLeft": 1500, "mode": "focus"}
         }
+        room_stats["total_created"] += 1
     return rooms[room_id]
 
 class ConnectionManager:
@@ -143,6 +139,14 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str = No
                     await manager.broadcast(room_id, {
                         "type": "timer_sync",
                         "timer": room["timer"]
+                    })
+
+                elif msg_type == "recording_started":
+                    room_stats["total_video_calls"] += 1
+                    # Broadcast recording notification to all participants
+                    await manager.broadcast(room_id, {
+                        "type": "recording_started",
+                        "text": msg.get("text", f"{username} has started recording this session.")
                     })
                     
             except json.JSONDecodeError:

@@ -5,18 +5,19 @@ import {
     LineElement, ArcElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { Users, BookOpen, Search, Activity, TrendingUp } from 'lucide-react';
+import { Users, BookOpen, Search, Activity, Edit3, Library, Clock, CheckSquare, Bookmark, Video } from 'lucide-react';
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, PointElement,
     LineElement, ArcElement, Title, Tooltip, Legend, Filler
 );
 
-export default function AnalyticsPage() {
+export default function AnalyticsPage({ isDashboard = false }: { isDashboard?: boolean }) {
     const [overview, setOverview] = useState<any>(null);
     const [contentData, setContentData] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [searchData, setSearchData] = useState<any>(null);
+    const [studyToolsData, setStudyToolsData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -25,16 +26,18 @@ export default function AnalyticsPage() {
 
     const loadData = async () => {
         try {
-            const [o, c, u, s] = await Promise.all([
+            const [o, c, u, s, st] = await Promise.all([
                 analyticsAPI.overview(),
                 analyticsAPI.content(),
                 analyticsAPI.users(),
                 analyticsAPI.search(),
+                analyticsAPI.studyTools(),
             ]);
             setOverview(o.data);
             setContentData(c.data);
             setUserData(u.data);
             setSearchData(s.data);
+            setStudyToolsData(st.data);
         } catch (err) {
             console.error('Analytics load error:', err);
         } finally {
@@ -87,7 +90,37 @@ export default function AnalyticsPage() {
                 </div>
             )}
 
-            <div className="grid-2" style={{ marginBottom: 24 }}>
+            {/* Study Tools Stats */}
+            {!isDashboard && studyToolsData && (
+                <div className="chart-card" style={{ marginBottom: 32 }}>
+                    <h3 style={{ marginBottom: 20 }}>🛠️ Study Tools Usage</h3>
+                    <div className="grid-4 gap-4">
+                        {[
+                            { label: 'Total Sessions', value: studyToolsData.total_study_sessions, icon: Clock, color: '#f43f5e' },
+                            { label: 'Study Hours', value: studyToolsData.total_study_hours, icon: Clock, color: '#ec4899' },
+                            { label: 'Study Rooms Created', value: studyToolsData.total_study_rooms, icon: Users, color: '#3b82f6' },
+                            { label: 'Video Calls Hosted', value: studyToolsData.total_video_calls, icon: Video, color: '#8b5cf6' },
+                            { label: 'Notes Created', value: studyToolsData.total_notes, icon: Edit3, color: '#8b5cf6' },
+                            { label: 'Flashcards', value: studyToolsData.total_flashcards, icon: Library, color: '#6366f1' },
+                            { label: 'Assignments', value: studyToolsData.total_assignments, icon: CheckSquare, color: '#10b981' },
+                            { label: 'Collections', value: studyToolsData.total_collections, icon: BookOpen, color: '#0ea5e9' },
+                            { label: 'Bookmarks', value: studyToolsData.total_bookmarks, icon: Bookmark, color: '#f59e0b' },
+                        ].map((stat) => (
+                            <div className="stats-card hover-shadow" key={stat.label} style={{ padding: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div className="icon-wrapper" style={{ background: `${stat.color}15`, padding: '12px', borderRadius: '50%' }}>
+                                    <stat.icon size={24} color={stat.color} />
+                                </div>
+                                <div className="stats-info">
+                                    <h3 style={{ fontSize: '1.4rem', margin: 0, fontWeight: 800 }}>{stat.value.toLocaleString()}</h3>
+                                    <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-secondary)' }}>{stat.label}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="grid-3" style={{ marginBottom: 24, gap: '24px' }}>
                 {/* Content by Type */}
                 {contentData && (
                     <div className="chart-card">
@@ -104,7 +137,7 @@ export default function AnalyticsPage() {
                                 }}
                                 options={{
                                     responsive: true,
-                                    plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-secondary)', padding: 16 } } },
+                                    plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', padding: 16 } } },
                                 }}
                             />
                         </div>
@@ -127,7 +160,30 @@ export default function AnalyticsPage() {
                                 }}
                                 options={{
                                     responsive: true,
-                                    plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-secondary)', padding: 16 } } },
+                                    plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', padding: 16 } } },
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Users by Domain */}
+                {userData && (
+                    <div className="chart-card">
+                        <h3>🏢 Users by Domain</h3>
+                        <div style={{ maxHeight: 300 }}>
+                            <Doughnut
+                                data={{
+                                    labels: Object.keys(userData.by_department),
+                                    datasets: [{
+                                        data: Object.values(userData.by_department),
+                                        backgroundColor: chartColors.slice(2).reverse(),
+                                        borderWidth: 0,
+                                    }],
+                                }}
+                                options={{
+                                    responsive: true,
+                                    plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', padding: 16 } } },
                                 }}
                             />
                         </div>
@@ -161,8 +217,8 @@ export default function AnalyticsPage() {
                                 responsive: true,
                                 plugins: { legend: { display: false } },
                                 scales: {
-                                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: 'var(--text-tertiary)' } },
-                                    x: { grid: { display: false }, ticks: { color: 'var(--text-tertiary)' } },
+                                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+                                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
                                 },
                             }}
                         />
@@ -187,8 +243,8 @@ export default function AnalyticsPage() {
                                 responsive: true,
                                 plugins: { legend: { display: false } },
                                 scales: {
-                                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: 'var(--text-tertiary)' } },
-                                    x: { grid: { display: false }, ticks: { color: 'var(--text-tertiary)', maxRotation: 45 } },
+                                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+                                    x: { grid: { display: false }, ticks: { color: '#94a3b8', maxRotation: 45 } },
                                 },
                             }}
                         />

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer
@@ -34,11 +34,13 @@ ROLE_PERMISSIONS = {
         "view_admin_analytics", "view_analytics", "upload_content",
         "view_content", "search", "use_chatbot", "bookmark", "notes",
         "collections", "study_timer", "view_personal_analytics",
+        "manage_assignments", "grade_submissions", "view_all_submissions",
     },
     "faculty": {
         "manage_content", "upload_content", "view_analytics",
         "view_content", "search", "use_chatbot", "bookmark", "notes",
         "collections", "study_timer", "view_personal_analytics",
+        "manage_assignments", "grade_submissions", "view_all_submissions",
     },
     "staff": {
         "manage_content", "upload_content", "view_analytics",
@@ -49,6 +51,7 @@ ROLE_PERMISSIONS = {
         "upload_content", "view_content", "search", "use_chatbot",
         "bookmark", "notes", "collections", "study_timer",
         "view_personal_analytics",
+        "submit_assignments", "view_my_submissions",
     },
     "alumni": {
         "view_content", "search", "use_chatbot", "bookmark", "notes",
@@ -75,7 +78,7 @@ def require_role(*permissions: str):
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -110,6 +113,10 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    valid_roles = ["student", "faculty", "staff", "admin", "alumni", "parent"]
+    if user_data.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+
     # Create user
     user = User(
         username=user_data.username,
@@ -137,8 +144,15 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    # Block banned/deactivated users
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Your account has been suspended due to repeated violations. Please contact an administrator."
+        )
+
     # Update last active & streak
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     if user.last_active:
         diff = (now - user.last_active).days
         if diff == 1:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from database import get_db
@@ -19,13 +19,14 @@ def create_study_session(
     db: Session = Depends(get_db),
 ):
     """Log a completed study session."""
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
     session = StudySession(
         user_id=current_user.id,
         content_id=data.content_id,
         duration_seconds=data.duration_seconds,
         session_type=data.session_type,
-        started_at=datetime.utcnow() - timedelta(seconds=data.duration_seconds),
-        ended_at=datetime.utcnow(),
+        started_at=now_utc - timedelta(seconds=data.duration_seconds),
+        ended_at=now_utc,
     )
     db.add(session)
 
@@ -58,7 +59,8 @@ def list_study_sessions(
     db: Session = Depends(get_db),
 ):
     """List user's study sessions for the given number of days."""
-    since = datetime.utcnow() - timedelta(days=days)
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    since = now_utc - timedelta(days=days)
     sessions = (
         db.query(StudySession)
         .filter(
@@ -95,7 +97,8 @@ def get_study_stats(
     db: Session = Depends(get_db),
 ):
     """Get study statistics for the current user."""
-    since = datetime.utcnow() - timedelta(days=days)
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    since = now_utc - timedelta(days=days)
 
     sessions = (
         db.query(StudySession)
@@ -119,7 +122,7 @@ def get_study_stats(
     # Fill missing days
     daily_list = []
     for i in range(days):
-        d = (datetime.utcnow() - timedelta(days=days - 1 - i)).strftime("%Y-%m-%d")
+        d = (now_utc - timedelta(days=days - 1 - i)).strftime("%Y-%m-%d")
         daily_list.append({"date": d, "seconds": daily.get(d, 0)})
 
     return {

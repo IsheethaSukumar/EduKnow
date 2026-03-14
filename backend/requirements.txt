@@ -12,3 +12,5 @@ bcrypt
 groq
 pymupdf
 python-dotenv
+email-validator
+scipy

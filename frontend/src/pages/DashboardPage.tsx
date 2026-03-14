@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { recommendAPI, analyticsAPI, gamificationAPI } from '../services/api';
+import AnalyticsPage from './AnalyticsPage';
 import {
     BookOpen, Users, Search, TrendingUp, Upload, Eye, ThumbsUp,
     Zap, Award, ArrowUpRight, FileText, Video, Presentation, BookMarked
@@ -25,6 +26,11 @@ const TYPE_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
     const { user } = useAuth();
+    
+    // If user is admin, just show the global analytics dashboard directly
+    if (user && user.role === 'admin') {
+        return <AnalyticsPage isDashboard={true} />;
+    }
     const navigate = useNavigate();
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [trending, setTrending] = useState<any[]>([]);
